@@ -189,7 +189,7 @@ export default function TournamentDetailPage({ params }) {
                                 <li>No hacking, cheating, or use of exploits.</li>
                                 <li>Follow fair play guidelines at all times.</li>
                                 <li>Results must be submitted with a screenshot for verification.</li>
-                                <li>Admin's decision is final.</li>
+                                <li>Admin&apos;s decision is final.</li>
                             </ul>
                         </div>
                     </motion.div>

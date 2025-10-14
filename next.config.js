@@ -6,7 +6,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'api.dicebear.com',
       },
-      // If your Google profile pics are from 'lh3.googleusercontent.com', add it too
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
@@ -15,4 +14,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig; // Use module.exports
