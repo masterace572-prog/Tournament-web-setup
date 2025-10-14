@@ -8,6 +8,8 @@ import { collectionGroup, query, where, getDocs, onSnapshot, doc } from "firebas
 import { motion } from "framer-motion";
 import { FaUserEdit, FaShieldAlt } from "react-icons/fa";
 import EditProfileModal from "@/components/EditProfileModal"; // ⭐️ IMPORT THE MODAL
+import Image from 'next/image';
+
 
 // StatCard component is unchanged
 const StatCard = ({ label, value, color }) => (
@@ -90,11 +92,13 @@ export default function ProfilePage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-col md:flex-row items-center bg-gray-800/50 p-6 rounded-lg border border-gray-700"
                     >
-                        <img
-                            src={userData.profilePicUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${userData.username}`}
-                            alt="Profile Picture"
-                            className="w-24 h-24 rounded-full border-4 border-purple-500"
-                        />
+                        <Image
+    src={userData.profilePicUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${userData.username}`}
+    alt="Profile Picture"
+    width={96} // Corresponds to w-24 (24 * 4px = 96px)
+    height={96} // Corresponds to h-24
+    className="rounded-full border-4 border-purple-500"
+/>
                         <div className="md:ml-6 mt-4 md:mt-0 text-center md:text-left">
                             <h1 className="text-3xl font-bold text-white">{userData.username}</h1>
                             <p className="text-gray-400">{userData.email}</p>

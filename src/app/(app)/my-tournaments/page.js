@@ -90,7 +90,7 @@ export default function MyTournamentsPage() {
                     transition={{ delay: 0.1 }}
                     className="text-gray-400 mt-2"
                 >
-                    Here are all the battles you've joined. Good luck!
+                    Here are all the battles you&apos;ve joined. Good luck!
                 </motion.p>
 
                 {/* Filter Tabs */}
