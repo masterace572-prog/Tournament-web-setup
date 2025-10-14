@@ -28,7 +28,7 @@ const Navbar = () => {
   return (
     <nav className="bg-gray-800 text-white p-4 flex justify-between items-center shadow-lg sticky top-0 z-50">
       <h1 className="text-xl font-bold text-purple-400 cursor-pointer" onClick={() => router.push('/dashboard')}>
-        Arena Ace
+        Tournament Hub
       </h1>
       <div className="flex items-center space-x-4 md:space-x-6">
         <button onClick={() => router.push('/dashboard')} className="hover:text-purple-400 transition-colors flex items-center space-x-1">
@@ -78,7 +78,7 @@ export default function AppLayout({ children }) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white">
         {/* You can add a spinner component here later */}
-        <p className="text-xl">Loading Arena Ace...</p>
+        <p className="text-xl">Loading Tournament Hub...</p>
         <p className="text-sm text-gray-400 mt-2">Authenticating your session</p>
       </div>
     );

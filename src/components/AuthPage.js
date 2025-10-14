@@ -96,7 +96,7 @@ const AuthForm = ({ isLogin, setIsLogin }) => {
     >
       <div className="text-center">
         <h1 className="text-3xl font-bold text-white">{isLogin ? 'Welcome Back' : 'Create Account'}</h1>
-        <p className="text-gray-400 mt-1">{isLogin ? 'Sign in to continue to Arena Ace' : 'Join the arena today!'}</p>
+        <p className="text-gray-400 mt-1">{isLogin ? 'Sign in to continue' : 'Join the hub today!'}</p>
       </div>
       {error && <p className="text-red-400 text-sm text-center bg-red-900/50 p-3 rounded-md">{error}</p>}
       <form className="space-y-4" onSubmit={handleEmailAuth}>
@@ -172,7 +172,7 @@ export default function AuthPage() {
           transition={{ duration: 0.5 }}
           className="text-5xl font-bold text-white tracking-tight"
         >
-          Arena Ace
+          Tournament Hub
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -180,7 +180,7 @@ export default function AuthPage() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-purple-300 mt-2"
         >
-          Compete. Win. Dominate.
+          The Center of Competition.
         </motion.p>
       </div>
       

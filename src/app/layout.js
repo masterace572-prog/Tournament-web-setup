@@ -4,8 +4,8 @@ import { ThemeProvider } from "../components/ThemeProvider";
 import "./globals.css";
 
 export const metadata = {
-  title: "Arena Ace",
-  description: "BGMI/PUBGM Tournament Platform",
+  title: "Tournament Hub",
+  description: "Your Central Hub for BGMI/PUBGM Tournaments",
 };
 
 export default function RootLayout({ children }) {
