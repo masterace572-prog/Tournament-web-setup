@@ -68,7 +68,7 @@ const DepositModal = ({ isOpen, onClose, currentUserData }) => {
                     {/* Payment Details */}
                     <div className="bg-gray-700/50 p-4 rounded-lg mb-4 text-sm">
                         <p className="font-semibold text-white">1. Make a payment to this UPI ID:</p>
-                        <p className="font-mono text-lg text-purple-300 bg-gray-900 p-2 rounded mt-1 text-center">arenaace@paytm</p>
+                        <p className="font-mono text-lg text-purple-300 bg-gray-900 p-2 rounded mt-1 text-center">7707887028@omni</p>
                         <p className="font-semibold text-white mt-3">2. Enter the details below:</p>
                     </div>
 
