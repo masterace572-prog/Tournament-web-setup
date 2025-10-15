@@ -115,19 +115,26 @@ export default function WalletPage() {
     }, [currentUser]);
 
     // Listener for requests
-    useEffect(() => {
-        if (!currentUser) return;
-        setIsRequestsLoading(true);
-        const reqQuery = query(collection(db, "requests"), where("userID", "==", currentUser.uid), orderBy("createdAt", "desc"), where("status", "in", ["Pending", "Declined"]));
-        const unsubscribe = onSnapshot(reqQuery, (snapshot) => {
-            setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setIsRequestsLoading(false); // ⭐️ SET LOADING FALSE HERE
-        }, (error) => {
-            console.error("Error fetching requests: ", error);
-            setIsRequestsLoading(false);
-        });
-        return () => unsubscribe();
-    }, [currentUser]);
+    // Listener for requests
+useEffect(() => {
+    if (!currentUser) return;
+    setIsRequestsLoading(true);
+    // ✅ NEW QUERY - Fetches all recent requests
+    const reqQuery = query(
+        collection(db, "requests"),
+        where("userID", "==", currentUser.uid),
+        orderBy("createdAt", "desc"),
+        limit(5) // Only show the 5 most recent requests to keep the UI clean
+    );
+    const unsubscribe = onSnapshot(reqQuery, (snapshot) => {
+        setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setIsRequestsLoading(false);
+    }, (error) => {
+        console.error("Error fetching requests: ", error);
+        setIsRequestsLoading(false);
+    });
+    return () => unsubscribe();
+}, [currentUser]);
 
     return (
         <>
