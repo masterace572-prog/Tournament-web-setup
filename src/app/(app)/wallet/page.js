@@ -19,32 +19,18 @@ const RequestItem = ({ request }) => {
     let statusIcon, statusColor, statusText;
     switch (request.status) {
         case 'Pending':
-            statusIcon = <FaClock className="text-yellow-400" />;
-            statusColor = 'border-yellow-500/50';
-            statusText = 'text-yellow-400';
-            break;
-        case 'Approved': // This case will likely not be seen due to filtering
-            statusIcon = <FaCheckCircle className="text-green-400" />;
-            statusColor = 'border-green-500/50';
-            statusText = 'text-green-400';
+            statusIcon = <FaClock className="text-yellow-400" />; statusColor = 'border-yellow-500/50'; statusText = 'text-yellow-400';
             break;
         case 'Declined':
-            statusIcon = <FaTimesCircle className="text-red-400" />;
-            statusColor = 'border-red-500/50';
-            statusText = 'text-red-400';
+            statusIcon = <FaTimesCircle className="text-red-400" />; statusColor = 'border-red-500/50'; statusText = 'text-red-400';
             break;
         default:
-            statusIcon = <FaClock />;
-            statusColor = 'border-gray-500/50';
-            statusText = 'text-gray-400';
+            statusIcon = <FaCheckCircle className="text-green-400" />; statusColor = 'border-green-500/50'; statusText = 'text-green-400';
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-4 bg-gray-800/50 rounded-lg border ${statusColor}`}
-        >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            className={`p-4 bg-gray-800/50 rounded-lg border ${statusColor}`}>
             <div className="flex items-center justify-between">
                 <div>
                     <p className="font-semibold text-white">{request.type} Request</p>
@@ -73,11 +59,8 @@ const TransactionItem = ({ transaction }) => {
     }) : 'Processing...';
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700"
-        >
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+            className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700">
             <div className="flex items-center space-x-4">
                 <div className={`p-2 rounded-full ${isCredit ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
                     {isCredit ? <FaArrowUp className="text-green-400" /> : <FaArrowDown className="text-red-400" />}
@@ -95,12 +78,14 @@ const TransactionItem = ({ transaction }) => {
     );
 };
 
+
 export default function WalletPage() {
     const { currentUser } = useAuth();
     const [userData, setUserData] = useState(null);
     const [transactions, setTransactions] = useState([]);
     const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [isTransactionsLoading, setIsTransactionsLoading] = useState(true); // ⭐️ SEPARATE LOADING STATE
+    const [isRequestsLoading, setIsRequestsLoading] = useState(true); // ⭐️ SEPARATE LOADING STATE
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
@@ -114,26 +99,34 @@ export default function WalletPage() {
         return () => unsubscribe();
     }, [currentUser]);
 
-    // Combined listener for transactions and requests
+    // Listener for transaction history
     useEffect(() => {
         if (!currentUser) return;
-        setLoading(true);
-
+        setIsTransactionsLoading(true);
         const transQuery = query(collection(db, "transactions"), where("userID", "==", currentUser.uid), orderBy("timestamp", "desc"));
-        const unsubscribeTransactions = onSnapshot(transQuery, (snapshot) => {
+        const unsubscribe = onSnapshot(transQuery, (snapshot) => {
             setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setIsTransactionsLoading(false); // ⭐️ SET LOADING FALSE HERE
+        }, (error) => {
+            console.error("Error fetching transactions: ", error);
+            setIsTransactionsLoading(false);
         });
+        return () => unsubscribe();
+    }, [currentUser]);
 
+    // Listener for requests
+    useEffect(() => {
+        if (!currentUser) return;
+        setIsRequestsLoading(true);
         const reqQuery = query(collection(db, "requests"), where("userID", "==", currentUser.uid), orderBy("createdAt", "desc"), where("status", "in", ["Pending", "Declined"]));
-        const unsubscribeRequests = onSnapshot(reqQuery, (snapshot) => {
+        const unsubscribe = onSnapshot(reqQuery, (snapshot) => {
             setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setLoading(false);
+            setIsRequestsLoading(false); // ⭐️ SET LOADING FALSE HERE
+        }, (error) => {
+            console.error("Error fetching requests: ", error);
+            setIsRequestsLoading(false);
         });
-
-        return () => {
-            unsubscribeTransactions();
-            unsubscribeRequests();
-        };
+        return () => unsubscribe();
     }, [currentUser]);
 
     return (
@@ -160,19 +153,23 @@ export default function WalletPage() {
                         <button onClick={() => setIsWithdrawModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">Withdraw Funds</button>
                     </div>
                     
-                    {requests.length > 0 && (
+                    {/* Requests Section */}
+                    {(isRequestsLoading || requests.length > 0) && (
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold text-white mb-4">Pending & Recent Requests</h2>
-                            <div className="space-y-4">
+                            {isRequestsLoading ? (<p className="text-gray-400">Loading requests...</p>) 
+                            : (<div className="space-y-4">
                                 {requests.map(req => (<RequestItem key={req.id} request={req} />))}
-                            </div>
+                              </div>)
+                            }
                         </div>
                     )}
                     
+                    {/* Transaction History */}
                     <div>
                         <h2 className="text-2xl font-bold text-white mb-4">Transaction History</h2>
-                        {loading ? ( <p className="text-center text-gray-400 mt-10">Loading history...</p> ) 
-                        : transactions.length === 0 && requests.length === 0 ? ( <p className="text-center text-gray-400 mt-10 bg-gray-800/50 p-6 rounded-lg">You have no activity yet.</p> ) 
+                        {isTransactionsLoading ? ( <p className="text-center text-gray-400 mt-10">Loading transaction history...</p> ) 
+                        : transactions.length === 0 ? ( <p className="text-center text-gray-400 mt-10 bg-gray-800/50 p-6 rounded-lg">You have no transactions yet.</p> ) 
                         : ( <div className="space-y-4">{transactions.map(tx => (<TransactionItem key={tx.id} transaction={tx} />))}</div> )}
                     </div>
                 </div>
