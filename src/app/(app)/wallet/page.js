@@ -10,54 +10,67 @@ import { FaArrowDown, FaArrowUp, FaClock, FaCheckCircle, FaTimesCircle } from "r
 import DepositModal from "@/components/DepositModal";
 import WithdrawModal from "@/components/WithdrawModal";
 
-// A Unified History Item component
-const HistoryItem = ({ item }) => {
-    // Determine the primary date for sorting and display
-    const date = (item.timestamp?.toDate() || item.createdAt?.toDate())?.toLocaleString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    }) || 'N/A';
-
-    let icon, colorClass, title, description, amountText;
-
-    // Check if the item is a request (by checking for a 'status' field)
-    if (item.status) {
-        // --- THIS IS A REQUEST ---
-        title = `${item.type} Request`;
-        amountText = `₹${item.amount.toFixed(0)}`;
-
-        switch (item.status) {
-            case 'Pending':
-                icon = <FaClock />;
-                colorClass = 'text-yellow-400';
-                description = `Your request is awaiting admin approval.`;
-                break;
-            case 'Declined':
-                icon = <FaTimesCircle />;
-                colorClass = 'text-red-400';
-                description = item.adminNote ? `Reason: ${item.adminNote}` : 'Declined by admin.';
-                break;
-            default: // Should not happen with our query, but good to have
-                icon = <FaCheckCircle />;
-                colorClass = 'text-gray-500';
-                description = `Status: ${item.status}`;
-                break;
-        }
-    } else {
-        // --- THIS IS A TRANSACTION ---
-        const isCredit = item.amount >= 0;
-        title = item.type;
-        description = item.description;
-
-        if (isCredit) {
-            icon = <FaArrowUp />;
-            colorClass = 'text-green-400';
-            amountText = `+₹${item.amount.toFixed(0)}`;
-        } else {
-            icon = <FaArrowDown />;
-            colorClass = 'text-red-400';
-            amountText = `-₹${Math.abs(item.amount).toFixed(0)}`;
-        }
+// Helper component for a single REQUEST status item
+const RequestItem = ({ request }) => {
+    const date = request.createdAt?.toDate ? request.createdAt.toDate().toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+    }) : 'N/A';
+    
+    let statusIcon, statusColor, statusText;
+    switch (request.status) {
+        case 'Pending':
+            statusIcon = <FaClock />;
+            statusColor = 'border-yellow-500/50';
+            statusText = 'text-yellow-400';
+            break;
+        case 'Approved':
+            statusIcon = <FaCheckCircle />;
+            statusColor = 'border-green-500/50';
+            statusText = 'text-green-400';
+            break;
+        case 'Declined':
+            statusIcon = <FaTimesCircle />;
+            statusColor = 'border-red-500/50';
+            statusText = 'text-red-400';
+            break;
+        default: // Fallback
+            statusIcon = <FaClock />;
+            statusColor = 'border-gray-500/50';
+            statusText = 'text-gray-400';
     }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-4 bg-gray-800/50 rounded-lg border ${statusColor}`}
+        >
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="font-semibold text-white">{request.type} Request</p>
+                    <p className="text-lg font-bold text-white">₹{request.amount.toFixed(0)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{date}</p>
+                </div>
+                <div className={`flex items-center space-x-2 text-sm font-bold ${statusText}`}>
+                    {statusIcon}
+                    <span>{request.status}</span>
+                </div>
+            </div>
+            {request.status === 'Declined' && request.adminNote && (
+                <div className="mt-3 pt-3 border-t border-gray-700">
+                    <p className="text-xs text-red-300"><span className="font-bold">Reason:</span> {request.adminNote}</p>
+                </div>
+            )}
+        </motion.div>
+    );
+};
+
+// Helper component for a single TRANSACTION item
+const TransactionItem = ({ transaction }) => {
+    const isCredit = transaction.amount >= 0;
+    const date = transaction.timestamp?.toDate ? transaction.timestamp.toDate().toLocaleString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) : 'Processing...';
 
     return (
         <motion.div
@@ -66,16 +79,18 @@ const HistoryItem = ({ item }) => {
             className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700"
         >
             <div className="flex items-center space-x-4">
-                <div className={`p-2 text-xl rounded-full bg-gray-700 ${colorClass}`}>
-                    {icon}
+                <div className={`p-2 rounded-full ${isCredit ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                    {isCredit ? <FaArrowUp className="text-green-400" /> : <FaArrowDown className="text-red-400" />}
                 </div>
                 <div>
-                    <p className="font-semibold text-white capitalize">{title}</p>
-                    <p className="text-xs text-gray-400 max-w-xs truncate">{description}</p>
+                    <p className="font-semibold text-white capitalize">{transaction.type}</p>
+                    <p className="text-xs text-gray-400">{transaction.description}</p>
                     <p className="text-xs text-gray-500 mt-1">{date}</p>
                 </div>
             </div>
-            <p className={`font-bold text-lg whitespace-nowrap ${colorClass}`}>{amountText}</p>
+            <p className={`font-bold text-lg ${isCredit ? 'text-green-400' : 'text-red-400'}`}>
+                {isCredit ? `+₹${transaction.amount}` : `-₹${Math.abs(transaction.amount)}`}
+            </p>
         </motion.div>
     );
 };
@@ -84,8 +99,10 @@ const HistoryItem = ({ item }) => {
 export default function WalletPage() {
     const { currentUser } = useAuth();
     const [userData, setUserData] = useState(null);
-    const [history, setHistory] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [transactions, setTransactions] = useState([]);
+    const [requests, setRequests] = useState([]);
+    const [isTransactionsLoading, setIsTransactionsLoading] = useState(true);
+    const [isRequestsLoading, setIsRequestsLoading] = useState(true);
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
@@ -99,45 +116,36 @@ export default function WalletPage() {
         return () => unsubscribe();
     }, [currentUser]);
 
-    // Combined listener for all history items
+    // Listener for transaction history
     useEffect(() => {
         if (!currentUser) return;
-        setIsLoading(true);
+        setIsTransactionsLoading(true);
+        const transQuery = query(collection(db, "transactions"), where("userID", "==", currentUser.uid), orderBy("timestamp", "desc"), limit(20));
+        const unsubscribe = onSnapshot(transQuery, (snapshot) => {
+            setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setIsTransactionsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [currentUser]);
 
-        let transactionsData = [];
-        let requestsData = [];
-        let combinedInitialized = false;
-
-        const updateAndSortHistory = () => {
-            if (!combinedInitialized) return; // Don't run until both listeners have fired once
-            const combinedList = [...transactionsData, ...requestsData];
-            combinedList.sort((a, b) => {
-                const dateA = a.timestamp?.toDate() || a.createdAt?.toDate();
-                const dateB = b.timestamp?.toDate() || b.createdAt?.toDate();
-                return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
-            });
-            setHistory(combinedList);
-            setIsLoading(false);
-        };
-
-        const transQuery = query(collection(db, "transactions"), where("userID", "==", currentUser.uid));
-        const unsubscribeTransactions = onSnapshot(transQuery, (snapshot) => {
-            transactionsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            if (!combinedInitialized && requestsData) combinedInitialized = true;
-            updateAndSortHistory();
-        }, (error) => console.error("Transaction listener error:", error));
-
-        const reqQuery = query(collection(db, "requests"), where("userID", "==", currentUser.uid), where("status", "in", ["Pending", "Declined"]));
-        const unsubscribeRequests = onSnapshot(reqQuery, (snapshot) => {
-            requestsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            if (!combinedInitialized && transactionsData) combinedInitialized = true;
-            updateAndSortHistory();
-        }, (error) => console.error("Request listener error:", error));
-
-        return () => {
-            unsubscribeTransactions();
-            unsubscribeRequests();
-        };
+    // Listener for ALL recent requests
+    useEffect(() => {
+        if (!currentUser) return;
+        setIsRequestsLoading(true);
+        const reqQuery = query(
+            collection(db, "requests"),
+            where("userID", "==", currentUser.uid),
+            orderBy("createdAt", "desc"),
+            limit(5) // Get the 5 most recent requests, regardless of status
+        );
+        const unsubscribe = onSnapshot(reqQuery, (snapshot) => {
+            setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setIsRequestsLoading(false);
+        }, (error) => {
+            console.error("Error fetching requests:", error);
+            setIsRequestsLoading(false);
+        });
+        return () => unsubscribe();
     }, [currentUser]);
 
     return (
@@ -164,11 +172,21 @@ export default function WalletPage() {
                         <button onClick={() => setIsWithdrawModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">Withdraw Funds</button>
                     </div>
                     
+                    {/* Recent Requests Section */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-bold text-white mb-4">Recent Requests</h2>
+                        {isRequestsLoading ? ( <p className="text-gray-400">Loading requests...</p> ) 
+                        : requests.length === 0 ? (<p className="text-sm text-gray-500">You have no recent requests.</p>)
+                        : ( <div className="space-y-4">{requests.map(req => (<RequestItem key={req.id} request={req} />))}</div>)
+                        }
+                    </div>
+                    
+                    {/* Transaction History */}
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-4">History</h2>
-                        {isLoading ? ( <p className="text-center text-gray-400 mt-10">Loading history...</p> ) 
-                        : history.length === 0 ? ( <p className="text-center text-gray-400 mt-10 bg-gray-800/50 p-6 rounded-lg">You have no activity yet.</p> ) 
-                        : ( <div className="space-y-4">{history.map(item => (<HistoryItem key={item.itemType + item.id} item={item} />))}</div> )}
+                        <h2 className="text-2xl font-bold text-white mb-4">Transaction History</h2>
+                        {isTransactionsLoading ? ( <p className="text-center text-gray-400 mt-10">Loading transaction history...</p> ) 
+                        : transactions.length === 0 ? ( <p className="text-center text-gray-400 mt-10 bg-gray-800/50 p-6 rounded-lg">You have no transactions yet.</p> ) 
+                        : ( <div className="space-y-4">{transactions.map(tx => (<TransactionItem key={tx.id} transaction={tx} />))}</div> )}
                     </div>
                 </div>
             </div>
