@@ -23,17 +23,12 @@ const RequestItem = ({ request }) => {
             statusColor = 'border-yellow-500/50';
             statusText = 'text-yellow-400';
             break;
-        case 'Approved':
-            statusIcon = <FaCheckCircle className="text-green-400" />;
-            statusColor = 'border-green-500/50';
-            statusText = 'text-green-400';
-            break;
         case 'Declined':
             statusIcon = <FaTimesCircle className="text-red-400" />;
             statusColor = 'border-red-500/50';
             statusText = 'text-red-400';
             break;
-        default:
+        default: // This default will now rarely be used, but is a good fallback
             statusIcon = <FaClock className="text-gray-400" />;
             statusColor = 'border-gray-500/50';
             statusText = 'text-gray-400';
@@ -106,14 +101,12 @@ export default function WalletPage() {
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
-    // Listener for real-time user data (wallet balance)
+    // Listener for user data
     useEffect(() => {
         if (!currentUser) return;
         const userRef = doc(db, 'users', currentUser.uid);
         const unsubscribe = onSnapshot(userRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setUserData({ userID: docSnap.id, ...docSnap.data() });
-            }
+            if (docSnap.exists()) setUserData({ userID: docSnap.id, ...docSnap.data() });
         });
         return () => unsubscribe();
     }, [currentUser]);
@@ -126,28 +119,24 @@ export default function WalletPage() {
         const unsubscribe = onSnapshot(transQuery, (snapshot) => {
             setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             setIsTransactionsLoading(false);
-        }, (error) => {
-            console.error("Error fetching transactions: ", error);
-            setIsTransactionsLoading(false);
         });
         return () => unsubscribe();
     }, [currentUser]);
 
-    // Listener for requests
+    // Listener for PENDING and DECLINED requests
     useEffect(() => {
         if (!currentUser) return;
         setIsRequestsLoading(true);
+        // ⭐️ THE QUERY IS NOW MORE SPECIFIC ⭐️
         const reqQuery = query(
             collection(db, "requests"),
             where("userID", "==", currentUser.uid),
+            where("status", "in", ["Pending", "Declined"]), // Only get pending and declined
             orderBy("createdAt", "desc"),
-            limit(5) // Get the 5 most recent requests, regardless of status
+            limit(5)
         );
         const unsubscribe = onSnapshot(reqQuery, (snapshot) => {
             setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setIsRequestsLoading(false);
-        }, (error) => {
-            console.error("Error fetching requests: ", error);
             setIsRequestsLoading(false);
         });
         return () => unsubscribe();
@@ -177,12 +166,12 @@ export default function WalletPage() {
                         <button onClick={() => setIsWithdrawModalOpen(true)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">Withdraw Funds</button>
                     </div>
                     
-                    {/* Requests Section */}
+                    {/* Requests Section - This UI logic is now perfect. */}
                     {(isRequestsLoading || requests.length > 0) && (
                         <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-white mb-4">Recent Requests</h2>
+                            <h2 className="text-2xl font-bold text-white mb-4">Pending & Recent Requests</h2>
                             {isRequestsLoading ? (<p className="text-gray-400">Loading requests...</p>) 
-                            : requests.length === 0 ? (<p className="text-sm text-gray-500">You have no recent requests.</p>)
+                            : requests.length === 0 ? (<p className="text-sm text-gray-500">You have no pending or recently declined requests.</p>)
                             : (<div className="space-y-4">
                                 {requests.map(req => (<RequestItem key={req.id} request={req} />))}
                               </div>)
